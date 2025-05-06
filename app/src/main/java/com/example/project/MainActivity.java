@@ -1,14 +1,26 @@
 package com.example.project;
 
 import android.os.Bundle;
+import android.view.LayoutInflater;
+import android.view.View;
 
 import androidx.activity.EdgeToEdge;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+import androidx.viewpager2.widget.ViewPager2;
+
+import com.google.android.material.badge.BadgeDrawable;
+import com.google.android.material.tabs.TabLayout;
+import com.google.android.material.tabs.TabLayoutMediator;
 
 public class MainActivity extends AppCompatActivity {
+
+    TabLayout tabLayout;
+    ViewPager2 viewPager2;
+    ViewPagerAdapter adapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -20,5 +32,57 @@ public class MainActivity extends AppCompatActivity {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
+        init();
+
+        new TabLayoutMediator(
+                tabLayout,
+                viewPager2,
+                new TabLayoutMediator.TabConfigurationStrategy() {
+                    @Override
+                    public void onConfigureTab(@NonNull TabLayout.Tab tab, int position) {
+                        switch (position) {
+                            case 0:
+                                tab.setText("Food");
+                                BadgeDrawable badge = tab.getOrCreateBadge();
+                                badge.setNumber(10);
+                                badge.setMaxCharacterCount(2);
+                                tab.setIcon(R.drawable.food_icon);
+                                break;
+                            case 1:
+                                tab.setText("Cart");
+                                BadgeDrawable badge1 = tab.getOrCreateBadge();
+                                badge1.setNumber(100);
+                                badge1.setMaxCharacterCount(3);
+                                tab.setIcon(R.drawable.food_icon);
+                                break;
+                            case 2:
+                                tab.setText("Profile");
+                                BadgeDrawable badge2 = tab.getOrCreateBadge();
+                                badge2.setNumber(55);
+                                tab.setIcon(R.drawable.food_icon);
+                                break;
+
+                        }
+                    }
+                }
+        ).attach();
+
+        viewPager2.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
+            @Override
+            public void onPageSelected(int position) {
+                super.onPageSelected(position);
+                BadgeDrawable badge = tabLayout.getTabAt(position).getOrCreateBadge();
+                badge.setVisible(false);
+                badge.setNumber(0);
+            }
+        });
+    }
+
+    public void init()
+    {
+        tabLayout = findViewById(R.id.tabLayout);
+        viewPager2 = findViewById(R.id.viewpager2);
+        adapter = new ViewPagerAdapter(this);
+        viewPager2.setAdapter(adapter);
     }
 }
