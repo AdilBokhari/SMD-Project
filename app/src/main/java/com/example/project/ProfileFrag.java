@@ -1,64 +1,185 @@
 package com.example.project;
 
 import android.os.Bundle;
-
-import androidx.fragment.app.Fragment;
-
+import android.os.Handler;
+import android.text.Editable;
+import android.text.TextUtils;
+import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.LinearLayout;
+import android.widget.TextView;
+import android.widget.Toast;
 
-/**
- * A simple {@link Fragment} subclass.
- * Use the {@link ProfileFrag#newInstance} factory method to
- * create an instance of this fragment.
- */
+import androidx.annotation.NonNull;
+import androidx.fragment.app.Fragment;
+
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.auth.UserProfileChangeRequest;
+
 public class ProfileFrag extends Fragment {
 
-    // TODO: Rename parameter arguments, choose names that match
-    // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-    private static final String ARG_PARAM1 = "param1";
-    private static final String ARG_PARAM2 = "param2";
+    FirebaseAuth mAuth;
+    EditText emailEditText, passwordEditText, nameEditText;
+    Button loginButton, signUpButton, logoutButton;
+    TextView userEmailTextView;
+    LinearLayout loginLayout, profileLayout;
 
-    // TODO: Rename and change types of parameters
-    private String mParam1;
-    private String mParam2;
+    Handler handler = new Handler();
+    Runnable nameSaveRunnable;
 
     public ProfileFrag() {
         // Required empty public constructor
     }
 
-    /**
-     * Use this factory method to create a new instance of
-     * this fragment using the provided parameters.
-     *
-     * @param param1 Parameter 1.
-     * @param param2 Parameter 2.
-     * @return A new instance of fragment ProfileFrag.
-     */
-    // TODO: Rename and change types and number of parameters
-    public static ProfileFrag newInstance(String param1, String param2) {
-        ProfileFrag fragment = new ProfileFrag();
-        Bundle args = new Bundle();
-        args.putString(ARG_PARAM1, param1);
-        args.putString(ARG_PARAM2, param2);
-        fragment.setArguments(args);
-        return fragment;
+    @Override
+    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        View view = inflater.inflate(R.layout.fragment_profile, container, false);
+        init(view);
+        loginButton.setOnClickListener(v -> loginUser());
+        signUpButton.setOnClickListener(v -> registerUser());
+        logoutButton.setOnClickListener(v -> logoutUser());
+        nameEditText.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                handler.removeCallbacks(nameSaveRunnable);
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                nameSaveRunnable = () -> updateUserName();
+                handler.postDelayed(nameSaveRunnable, 1000); // 1 second delay
+            }
+        });
+
+        // Check if user is already logged in
+        updateUI(mAuth.getCurrentUser());
+
+        return view;
     }
 
     @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        if (getArguments() != null) {
-            mParam1 = getArguments().getString(ARG_PARAM1);
-            mParam2 = getArguments().getString(ARG_PARAM2);
+    public void onStart() {
+        super.onStart();
+        FirebaseUser currentUser = mAuth.getCurrentUser();
+        updateUI(currentUser);
+    }
+
+    private void updateUI(FirebaseUser user) {
+        if (user != null) {
+            loginLayout.setVisibility(View.GONE);
+            profileLayout.setVisibility(View.VISIBLE);
+
+            userEmailTextView.setText(user.getEmail());
+
+            String displayName = user.getDisplayName();
+            if (displayName != null && !displayName.isEmpty()) {
+                nameEditText.setText(displayName);
+            } else {
+                nameEditText.setText("");
+                nameEditText.setHint("Enter your name");
+            }
+        } else {
+            loginLayout.setVisibility(View.VISIBLE);
+            profileLayout.setVisibility(View.GONE);
         }
     }
 
-    @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
-        // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_profile, container, false);
+    private void updateUserName() {
+        FirebaseUser user = mAuth.getCurrentUser();
+        if (user != null) {
+            String newName = nameEditText.getText().toString().trim();
+
+            if (TextUtils.isEmpty(newName)) {
+                return;
+            }
+
+            if (newName.equals(user.getDisplayName())) {
+                return;
+            }
+
+            UserProfileChangeRequest profileUpdates = new UserProfileChangeRequest.Builder()
+                    .setDisplayName(newName)
+                    .build();
+
+            user.updateProfile(profileUpdates)
+                    .addOnCompleteListener(task -> {
+                        if (task.isSuccessful()) {
+                            Toast.makeText(getActivity(), "Name updated", Toast.LENGTH_SHORT).show();
+                        } else {
+                            Toast.makeText(getActivity(), "Update failed: " +
+                                    task.getException().getMessage(), Toast.LENGTH_LONG).show();
+                        }
+                    });
+        }
+    }
+
+    private void loginUser() {
+        String email = emailEditText.getText().toString().trim();
+        String password = passwordEditText.getText().toString().trim();
+
+        if (TextUtils.isEmpty(email) || TextUtils.isEmpty(password)) {
+            Toast.makeText(getActivity(), "Email and password required", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        mAuth.signInWithEmailAndPassword(email, password)
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        FirebaseUser user = mAuth.getCurrentUser();
+                        Toast.makeText(getActivity(), "Login successful", Toast.LENGTH_SHORT).show();
+                        updateUI(user);
+                    } else {
+                        Toast.makeText(getActivity(), "Login failed: " +
+                                task.getException().getMessage(), Toast.LENGTH_LONG).show();
+                    }
+                });
+    }
+
+    private void registerUser() {
+        String email = emailEditText.getText().toString().trim();
+        String password = passwordEditText.getText().toString().trim();
+
+        if (TextUtils.isEmpty(email) || TextUtils.isEmpty(password)) {
+            Toast.makeText(getActivity(), "Email and password required", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        mAuth.createUserWithEmailAndPassword(email, password)
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        FirebaseUser user = mAuth.getCurrentUser();
+                        Toast.makeText(getActivity(), "Account created", Toast.LENGTH_SHORT).show();
+                        updateUI(user);
+                    } else {
+                        Toast.makeText(getActivity(), "Sign up failed: " +
+                                task.getException().getMessage(), Toast.LENGTH_LONG).show();
+                    }
+                });
+    }
+
+    private void logoutUser() {
+        mAuth.signOut();
+        Toast.makeText(getActivity(), "Logged out successfully", Toast.LENGTH_SHORT).show();
+        updateUI(null);
+    }
+    private void init(View view) {
+        mAuth = FirebaseAuth.getInstance();
+        loginLayout = view.findViewById(R.id.loginLayout);
+        emailEditText = view.findViewById(R.id.editTextEmail);
+        passwordEditText = view.findViewById(R.id.editTextPassword);
+        loginButton = view.findViewById(R.id.buttonLogin);
+        signUpButton = view.findViewById(R.id.buttonSignUp);
+        profileLayout = view.findViewById(R.id.profileLayout);
+        userEmailTextView = view.findViewById(R.id.textViewUserEmail);
+        nameEditText = view.findViewById(R.id.editTextName);
+        logoutButton = view.findViewById(R.id.buttonLogout);
     }
 }

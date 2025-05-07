@@ -44,22 +44,22 @@ public class MainActivity extends AppCompatActivity {
                             case 0:
                                 tab.setText("Food");
                                 BadgeDrawable badge = tab.getOrCreateBadge();
-                                badge.setNumber(10);
-                                badge.setMaxCharacterCount(2);
+//                                badge.setNumber(10);
+//                                badge.setMaxCharacterCount(2);
                                 tab.setIcon(R.drawable.food_icon);
                                 break;
                             case 1:
                                 tab.setText("Cart");
                                 BadgeDrawable badge1 = tab.getOrCreateBadge();
-                                badge1.setNumber(100);
-                                badge1.setMaxCharacterCount(3);
-                                tab.setIcon(R.drawable.food_icon);
+//                                badge1.setNumber(100);
+//                                badge1.setMaxCharacterCount(3);
+                                tab.setIcon(R.drawable.cart_icon);
                                 break;
                             case 2:
                                 tab.setText("Profile");
                                 BadgeDrawable badge2 = tab.getOrCreateBadge();
-                                badge2.setNumber(55);
-                                tab.setIcon(R.drawable.food_icon);
+//                                badge2.setNumber(55);
+                                tab.setIcon(R.drawable.profile_icon);
                                 break;
 
                         }
