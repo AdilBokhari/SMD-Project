@@ -18,13 +18,13 @@ public class ViewPagerAdapter extends FragmentStateAdapter {
         switch (position)
         {
             case 0:
-                return new ResturantListFrag();
+                return new RestaurantListFrag();
             case 1:
                 return new CartFragment();
             case 2:
                 return new ProfileFrag();
             default:
-                return new ResturantListFrag();
+                return new RestaurantListFrag();
         }
     }
 
