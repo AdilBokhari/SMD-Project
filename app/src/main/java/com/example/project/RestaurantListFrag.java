@@ -120,6 +120,24 @@ public class RestaurantListFrag extends Fragment implements RestaurantAdapter.on
     }
 
     @Override
+    public void onResume() {
+        super.onResume();
+
+        sharedPref = getActivity().getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
+        userRole = sharedPref.getString("userRole", "user");
+
+        if (fabAddResturant != null) {
+            if ("admin".equals(userRole)) {
+                fabAddResturant.setVisibility(View.VISIBLE);
+            } else {
+                fabAddResturant.setVisibility(View.GONE);
+            }
+        }
+        adapter.notifyDataSetChanged();
+    }
+
+
+    @Override
     public void onEdit(Restaurant r) {
         DatabaseReference dbRef = FirebaseDatabase.getInstance()
                 .getReference("restaurants")
