@@ -107,9 +107,6 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder
 
         cartRef.removeValue()
                 .addOnSuccessListener(aVoid -> {
-                    cartItems.remove(position);
-                    notifyItemRemoved(position);
-                    notifyItemRangeChanged(position, cartItems.size());
                     if (listener != null) {
                         listener.onCartUpdated();
                     }
