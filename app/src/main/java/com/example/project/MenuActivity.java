@@ -3,6 +3,8 @@ package com.example.project;
 import static java.security.AccessController.getContext;
 
 import android.app.AlertDialog;
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -29,7 +31,7 @@ import com.google.firebase.database.ValueEventListener;
 import java.util.ArrayList;
 import java.util.List;
 
-public class MenuActivity extends AppCompatActivity {
+public class MenuActivity extends AppCompatActivity implements MenuAdapter.onEditDel {
 
     RecyclerView recyclerView;
     MenuAdapter adapter;
@@ -37,6 +39,8 @@ public class MenuActivity extends AppCompatActivity {
     DatabaseReference dbRef;
     private String restaurantId;
     FloatingActionButton fabAddItem;
+    SharedPreferences sharedPref;
+    String userRole;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,7 +59,7 @@ public class MenuActivity extends AppCompatActivity {
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
 
         menuItemsList = new ArrayList<>();
-        adapter = new MenuAdapter(menuItemsList);
+        adapter = new MenuAdapter(menuItemsList, this);
         recyclerView.setAdapter(adapter);
         fabAddItem = findViewById(R.id.fabAddNewItem);
 
@@ -78,6 +82,14 @@ public class MenuActivity extends AppCompatActivity {
                 // Handle error
             }
         });
+        sharedPref = this.getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
+        userRole = sharedPref.getString("userRole", "user"); // Default to "user" if not found
+
+        if ("admin".equals(userRole)) {
+            fabAddItem.setVisibility(View.VISIBLE);  // Make the floating button visible if role is admin
+        } else {
+            fabAddItem.setVisibility(View.GONE);  // Hide the floating button otherwise
+        }
         fabAddItem.setOnClickListener((v)->{
             addItem(restaurantId);
         });
@@ -125,5 +137,29 @@ public class MenuActivity extends AppCompatActivity {
 
         builder.setNegativeButton("Cancel", null);
         builder.create().show();
+    }
+
+    @Override
+    public void onEdit(MenuItem r) {
+        DatabaseReference dbRef = FirebaseDatabase.getInstance()
+                .getReference("menuItems")
+                .child(r.getId());
+
+        dbRef.setValue(r)
+                .addOnSuccessListener(aVoid ->
+                        Toast.makeText(this, "Updated successfully", Toast.LENGTH_SHORT).show()
+                )
+                .addOnFailureListener(e ->
+                        Toast.makeText(this, "Update failed", Toast.LENGTH_SHORT).show()
+                );
+    }
+
+    @Override
+    public void onDelete(String ID, int position) {
+        DatabaseReference dbRef = FirebaseDatabase.getInstance().getReference("menuItems");
+        dbRef.child(ID).removeValue();
+
+        menuItemsList.remove(position);
+        adapter.notifyItemRemoved(position);
     }
 }

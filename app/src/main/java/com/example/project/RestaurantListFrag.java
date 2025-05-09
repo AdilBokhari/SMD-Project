@@ -1,6 +1,8 @@
 package com.example.project;
 
 import android.app.AlertDialog;
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -12,6 +14,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.Toast;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
@@ -25,12 +28,15 @@ import com.google.firebase.database.ValueEventListener;
 import java.util.ArrayList;
 import java.util.List;
 
-public class RestaurantListFrag extends Fragment {
+public class RestaurantListFrag extends Fragment implements RestaurantAdapter.onEditDel {
     RecyclerView recyclerView;
     RestaurantAdapter adapter;
     List<Restaurant> restaurantList;
     DatabaseReference dbRef;
     FloatingActionButton fabAddResturant;
+    ImageButton ibEdit, ibDelete;
+    SharedPreferences sharedPref;
+    String userRole;
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
@@ -38,12 +44,18 @@ public class RestaurantListFrag extends Fragment {
     }
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        SharedPreferences sharedPref = getActivity().getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
+        String userRole = sharedPref.getString("userRole", "user");
+
         recyclerView = view.findViewById(R.id.restaurantRecyclerView);
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
         restaurantList = new ArrayList<>();
-        adapter = new RestaurantAdapter(getContext(), restaurantList);
+        Context context = getContext();
+        adapter = new RestaurantAdapter(getContext(), restaurantList, this);
         recyclerView.setAdapter(adapter);
         fabAddResturant = view.findViewById(R.id.fabAddNewRestaurant);
+        ibDelete = view.findViewById(R.id.ibDel);
+        ibEdit = view.findViewById(R.id.ibEdit);
         dbRef = FirebaseDatabase.getInstance().getReference("restaurants");
         dbRef.addValueEventListener(new ValueEventListener() {
             @Override
@@ -60,6 +72,14 @@ public class RestaurantListFrag extends Fragment {
 
             }
         });
+        sharedPref = getActivity().getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
+        userRole = sharedPref.getString("userRole", "user"); // Default to "user" if not found
+
+        if ("admin".equals(userRole)) {
+            fabAddResturant.setVisibility(View.VISIBLE);
+        } else {
+            fabAddResturant.setVisibility(View.GONE);
+        }
         fabAddResturant.setOnClickListener((v)->{
             addRestaurant();
         });
@@ -99,4 +119,27 @@ public class RestaurantListFrag extends Fragment {
         builder.create().show();
     }
 
+    @Override
+    public void onEdit(Restaurant r) {
+        DatabaseReference dbRef = FirebaseDatabase.getInstance()
+                .getReference("restaurants")
+                .child(r.getId());
+
+        dbRef.setValue(r)
+                .addOnSuccessListener(aVoid ->
+                        Toast.makeText(getContext(), "Updated successfully", Toast.LENGTH_SHORT).show()
+                )
+                .addOnFailureListener(e ->
+                        Toast.makeText(getContext(), "Update failed", Toast.LENGTH_SHORT).show()
+                );
+    }
+
+    @Override
+    public void onDelete(String Id, int pos) {
+        DatabaseReference dbRef = FirebaseDatabase.getInstance().getReference("restaurants");
+        dbRef.child(Id).removeValue();
+
+        restaurantList.remove(pos);
+        adapter.notifyItemRemoved(pos);
+    }
 }
