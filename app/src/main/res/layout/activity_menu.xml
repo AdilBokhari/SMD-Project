@@ -2,10 +2,10 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:id="@+id/restaurantFrag">
+    android:id="@+id/menu">
 
     <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/restaurantRecyclerView"
+        android:id="@+id/MenuRecyclerView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:padding="8dp" />
@@ -17,7 +17,7 @@
         android:layout_alignParentBottom="true"
         android:layout_alignParentRight="true"
         android:layout_margin="30dp"
-        android:id="@+id/fabAddNewRestaurant"
+        android:id="@+id/fabAddNewItem"
         />
 
 </RelativeLayout>
