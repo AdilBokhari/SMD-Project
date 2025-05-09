@@ -59,7 +59,7 @@
                 <ImageButton
                     android:layout_width="40dp"
                     android:layout_height="40dp"
-                    android:src="@drawable/food_icon"
+                    android:src="@drawable/edit_icon"
                     android:id="@+id/ibEdit"
                     />
 
@@ -73,7 +73,7 @@
                 <ImageButton
                     android:layout_width="40dp"
                     android:layout_height="40dp"
-                    android:src="@drawable/food_icon"
+                    android:src="@drawable/delete_icon"
                     android:id="@+id/ibDel"
                     />
 

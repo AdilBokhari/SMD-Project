@@ -5,14 +5,24 @@ import java.util.List;
 public class User {
     private String id;
     private String name;
-    private String imageUrl;
     private String role;
+    private String address;
 
-    public User(String id, String name, String imageUrl, String role) {
+    public User() {
+    }
+
+    public User(String id, String name, String role) {
         this.id = id;
         this.name = name;
-        this.imageUrl = imageUrl;
         this.role = role;
+        this.address = "";
+    }
+
+    public User(String id, String name, String role, String address) {
+        this.id = id;
+        this.name = name;
+        this.role = role;
+        this.address = address;
     }
 
     public String getId() {
@@ -30,20 +40,16 @@ public class User {
     public void setName(String name) {
         this.name = name;
     }
-
-    public String getImageUrl() {
-        return imageUrl;
-    }
-
-    public void setImageUrl(String imageUrl) {
-        this.imageUrl = imageUrl;
-    }
-
     public String getRole() {
         return role;
     }
-
     public void setRole(String role) {
         this.role = role;
+    }
+    public String getAddress() {
+        return address;
+    }
+    public void setAddress(String address) {
+        this.address = address;
     }
 }

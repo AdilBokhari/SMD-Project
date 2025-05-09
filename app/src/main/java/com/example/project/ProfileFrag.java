@@ -22,19 +22,22 @@ import androidx.fragment.app.Fragment;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.auth.UserProfileChangeRequest;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 
 public class ProfileFrag extends Fragment {
 
     FirebaseAuth mAuth;
-    EditText emailEditText, passwordEditText, nameEditText;
+    EditText emailEditText, passwordEditText, nameEditText, addressEditText;
     Button loginButton, signUpButton, logoutButton;
     TextView userEmailTextView;
     LinearLayout loginLayout, profileLayout;
-
     Handler handler = new Handler();
     Runnable nameSaveRunnable;
+    Runnable addressSaveRunnable;
 
     public ProfileFrag() {
         // Required empty public constructor
@@ -50,25 +53,33 @@ public class ProfileFrag extends Fragment {
         nameEditText.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
                 handler.removeCallbacks(nameSaveRunnable);
             }
-
             @Override
             public void afterTextChanged(Editable s) {
                 nameSaveRunnable = () -> updateUserName();
-                handler.postDelayed(nameSaveRunnable, 1000); // 1 second delay
+                handler.postDelayed(nameSaveRunnable, 1000);
             }
         });
-
-        // Check if user is already logged in
+        addressEditText.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                handler.removeCallbacks(addressSaveRunnable);
+            }
+            @Override
+            public void afterTextChanged(Editable s) {
+                addressSaveRunnable = () -> updateUserAddress();
+                handler.postDelayed(addressSaveRunnable, 1000);
+            }
+        });
         updateUI(mAuth.getCurrentUser());
 
         return view;
     }
-
     @Override
     public void onStart() {
         super.onStart();
@@ -80,9 +91,7 @@ public class ProfileFrag extends Fragment {
         if (user != null) {
             loginLayout.setVisibility(View.GONE);
             profileLayout.setVisibility(View.VISIBLE);
-
             userEmailTextView.setText(user.getEmail());
-
             String displayName = user.getDisplayName();
             if (displayName != null && !displayName.isEmpty()) {
                 nameEditText.setText(displayName);
@@ -90,25 +99,46 @@ public class ProfileFrag extends Fragment {
                 nameEditText.setText("");
                 nameEditText.setHint("Enter your name");
             }
+            loadUserAddress(user.getUid());
         } else {
             loginLayout.setVisibility(View.VISIBLE);
             profileLayout.setVisibility(View.GONE);
         }
     }
 
+    private void loadUserAddress(String userId) {
+        DatabaseReference userRef = FirebaseDatabase.getInstance().getReference("users").child(userId);
+        userRef.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                if (dataSnapshot.exists()) {
+                    String address = dataSnapshot.child("address").getValue(String.class);
+                    if (address != null && !address.isEmpty()) {
+                        addressEditText.setText(address);
+                    } else {
+                        addressEditText.setText("");
+                        addressEditText.setHint("Enter your address");
+                    }
+                }
+            }
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+                Toast.makeText(getActivity(), "Failed to load address: " + databaseError.getMessage(),
+                        Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
     private void updateUserName() {
         FirebaseUser user = mAuth.getCurrentUser();
         if (user != null) {
             String newName = nameEditText.getText().toString().trim();
-
             if (TextUtils.isEmpty(newName)) {
                 return;
             }
-
             if (newName.equals(user.getDisplayName())) {
                 return;
             }
-
             UserProfileChangeRequest profileUpdates = new UserProfileChangeRequest.Builder()
                     .setDisplayName(newName)
                     .build();
@@ -116,6 +146,12 @@ public class ProfileFrag extends Fragment {
             user.updateProfile(profileUpdates)
                     .addOnCompleteListener(task -> {
                         if (task.isSuccessful()) {
+                            DatabaseReference userRef = FirebaseDatabase.getInstance()
+                                    .getReference("users")
+                                    .child(user.getUid())
+                                    .child("name");
+                            userRef.setValue(newName);
+
                             Toast.makeText(getActivity(), "Name updated", Toast.LENGTH_SHORT).show();
                         } else {
                             Toast.makeText(getActivity(), "Update failed: " +
@@ -125,41 +161,53 @@ public class ProfileFrag extends Fragment {
         }
     }
 
+    private void updateUserAddress() {
+        FirebaseUser user = mAuth.getCurrentUser();
+        if (user != null) {
+            String newAddress = addressEditText.getText().toString().trim();
+            DatabaseReference userRef = FirebaseDatabase.getInstance()
+                    .getReference("users")
+                    .child(user.getUid())
+                    .child("address");
+            userRef.setValue(newAddress)
+                    .addOnSuccessListener(aVoid -> {
+                        Toast.makeText(getActivity(), "Address updated", Toast.LENGTH_SHORT).show();
+                    })
+                    .addOnFailureListener(e -> {
+                        Toast.makeText(getActivity(), "Failed to update address: " +
+                                e.getMessage(), Toast.LENGTH_LONG).show();
+                    });
+        }
+    }
     private void loginUser() {
         String email = emailEditText.getText().toString().trim();
         String password = passwordEditText.getText().toString().trim();
-
         if (TextUtils.isEmpty(email) || TextUtils.isEmpty(password)) {
             Toast.makeText(getActivity(), "Email and password required", Toast.LENGTH_SHORT).show();
             return;
         }
-
         mAuth.signInWithEmailAndPassword(email, password)
                 .addOnCompleteListener(task -> {
                     if (task.isSuccessful()) {
                         FirebaseUser user = mAuth.getCurrentUser();
                         Toast.makeText(getActivity(), "Login successful", Toast.LENGTH_SHORT).show();
                         updateUI(user);
-
-                        // Retrieve the role from Firebase Database or set a default role
                         String userId = user.getUid();
                         DatabaseReference userRef = FirebaseDatabase.getInstance().getReference("users").child(userId);
                         userRef.get().addOnCompleteListener(databaseTask -> {
                             if (databaseTask.isSuccessful() && databaseTask.getResult() != null) {
                                 String role = (String) databaseTask.getResult().child("role").getValue();
                                 if (role != null) {
-                                    // Store the role in SharedPreferences
                                     SharedPreferences sharedPref = getActivity().getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
                                     SharedPreferences.Editor editor = sharedPref.edit();
                                     editor.putString("userRole", role);
-                                    editor.apply(); // Save the role
+                                    editor.apply();
                                 }
                             } else {
-                                // If role doesn't exist in DB, store a default role
                                 SharedPreferences sharedPref = getActivity().getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
                                 SharedPreferences.Editor editor = sharedPref.edit();
-                                editor.putString("userRole", "user"); // Default role
-                                editor.apply(); // Save the role
+                                editor.putString("userRole", "user");
+                                editor.apply();
                             }
                         });
 
@@ -169,7 +217,6 @@ public class ProfileFrag extends Fragment {
                     }
                 });
     }
-
     private void registerUser() {
         String email = emailEditText.getText().toString().trim();
         String password = passwordEditText.getText().toString().trim();
@@ -185,20 +232,15 @@ public class ProfileFrag extends Fragment {
                         FirebaseUser user = mAuth.getCurrentUser();
                         if (user != null) {
                             String uid = user.getUid();
-                            String name = ""; // optional: set from nameEditText if desired
-                            String imageUrl = ""; // optional: set default image URL
-                            String role = "user"; // default role
-
-                            // Create User object
-                            User newUser = new User(uid, name, imageUrl, role);
-
-                            // Save to Firebase Realtime Database
+                            String name = "";
+                            String role = "user";
+                            String address = "";
+                            User newUser = new User(uid,name,role,address);
                             DatabaseReference userRef = FirebaseDatabase.getInstance()
                                     .getReference("users")
                                     .child(uid);
                             userRef.setValue(newUser);
                         }
-
                         Toast.makeText(getActivity(), "Account created", Toast.LENGTH_SHORT).show();
                         updateUI(user);
                     } else {
@@ -207,14 +249,11 @@ public class ProfileFrag extends Fragment {
                     }
                 });
     }
-
-
-
     private void logoutUser() {
         mAuth.signOut();
         SharedPreferences sharedPref = getActivity().getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = sharedPref.edit();
-        editor.remove("userRole"); // Removes the key-value pair
+        editor.remove("userRole");
         editor.apply();
         Toast.makeText(getActivity(), "Logged out successfully", Toast.LENGTH_SHORT).show();
         updateUI(null);
@@ -229,6 +268,7 @@ public class ProfileFrag extends Fragment {
         profileLayout = view.findViewById(R.id.profileLayout);
         userEmailTextView = view.findViewById(R.id.textViewUserEmail);
         nameEditText = view.findViewById(R.id.editTextName);
+        addressEditText = view.findViewById(R.id.editTextAddress);
         logoutButton = view.findViewById(R.id.buttonLogout);
     }
 }
