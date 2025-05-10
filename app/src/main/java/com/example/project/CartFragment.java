@@ -71,7 +71,7 @@ public class CartFragment extends Fragment implements CartAdapter.CartItemListen
             showCartUI();
 
             btnCheckout.setOnClickListener(v -> {
-                //place order here
+                placeOrder();
             });
         } else {
             showLoginPrompt();
@@ -179,5 +179,111 @@ public class CartFragment extends Fragment implements CartAdapter.CartItemListen
         } else {
             showLoginPrompt();
         }
+    }
+    private void placeOrder() {
+        if (cartItems.isEmpty()) {
+            Toast.makeText(getContext(), "Your cart is empty", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        FirebaseUser currentUser = mAuth.getCurrentUser();
+        if (currentUser == null) {
+            Toast.makeText(getContext(), "Please log in to place an order", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        String userId = currentUser.getUid();
+        DatabaseReference userRef = FirebaseDatabase.getInstance().getReference("users").child(userId);
+        userRef.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                if (snapshot.exists()) {
+                    String userAddress = snapshot.child("address").getValue(String.class);
+                    if (userAddress == null || userAddress.isEmpty()) {
+                        Toast.makeText(getContext(), "Please add your address in profile before placing an order",
+                                Toast.LENGTH_LONG).show();
+                        return;
+                    }
+                    String restaurantId = cartItems.get(0).getRestaurantId();
+                    DatabaseReference restaurantRef = FirebaseDatabase.getInstance()
+                            .getReference("restaurants")
+                            .child(restaurantId);
+
+                    restaurantRef.addListenerForSingleValueEvent(new ValueEventListener() {
+                        @Override
+                        public void onDataChange(@NonNull DataSnapshot snapshot) {
+                            if (snapshot.exists()) {
+                                Restaurant restaurant = snapshot.getValue(Restaurant.class);
+                                String restaurantName = restaurant != null ? restaurant.getName() : "Unknown Restaurant";
+
+                                // Calculate total amount
+                                double totalAmount = 0;
+                                for (CartItem item : cartItems) {
+                                    totalAmount += item.getTotalPrice();
+                                }
+
+                                // Create order
+                                DatabaseReference ordersRef = FirebaseDatabase.getInstance().getReference("orders");
+                                String orderId = ordersRef.push().getKey();
+
+                                if (orderId != null) {
+                                    Order order = new Order(
+                                            orderId,
+                                            userId,
+                                            restaurantId,
+                                            restaurantName,
+                                            new ArrayList<>(cartItems),
+                                            totalAmount,
+                                            userAddress
+                                    );
+
+                                    // Save order to Firebase
+                                    ordersRef.child(orderId).setValue(order)
+                                            .addOnSuccessListener(aVoid -> {
+                                                // Clear cart after successful order
+                                                DatabaseReference cartRef = FirebaseDatabase.getInstance()
+                                                        .getReference("carts")
+                                                        .child(userId);
+
+                                                cartRef.removeValue()
+                                                        .addOnSuccessListener(aVoid1 -> {
+                                                            Toast.makeText(getContext(),
+                                                                    "Order placed successfully",
+                                                                    Toast.LENGTH_SHORT).show();
+                                                        })
+                                                        .addOnFailureListener(e -> {
+                                                            Toast.makeText(getContext(),
+                                                                    "Order placed but failed to clear cart: " + e.getMessage(),
+                                                                    Toast.LENGTH_LONG).show();
+                                                        });
+                                            })
+                                            .addOnFailureListener(e -> {
+                                                Toast.makeText(getContext(),
+                                                        "Failed to place order: " + e.getMessage(),
+                                                        Toast.LENGTH_SHORT).show();
+                                            });
+                                }
+                            } else {
+                                Toast.makeText(getContext(), "Restaurant not found", Toast.LENGTH_SHORT).show();
+                            }
+                        }
+
+                        @Override
+                        public void onCancelled(@NonNull DatabaseError error) {
+                            Toast.makeText(getContext(),
+                                    "Failed to get restaurant info: " + error.getMessage(),
+                                    Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                } else {
+                    Toast.makeText(getContext(), "User profile not found", Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                Toast.makeText(getContext(),
+                        "Failed to get user info: " + error.getMessage(),
+                        Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 }

@@ -16,6 +16,10 @@
             android:name=".MenuActivity"
             android:exported="false" />
         <activity
+            android:name=".AdminOrdersActivity"
+            android:exported="false"
+            android:label="Manage Orders" />
+        <activity
             android:name=".SplashScreen"
             android:exported="true">
             <intent-filter>

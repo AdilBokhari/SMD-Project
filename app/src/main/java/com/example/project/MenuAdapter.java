@@ -16,8 +16,11 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 
 import java.util.List;
 public class MenuAdapter extends RecyclerView.Adapter<MenuAdapter.ViewHolder> {
@@ -45,7 +48,6 @@ public class MenuAdapter extends RecyclerView.Adapter<MenuAdapter.ViewHolder> {
         public ImageView imageView;
         ImageButton ibEdit, ibDel;
         Button btnAddToCart;
-
         public ViewHolder(View view) {
             super(view);
             nameText = view.findViewById(R.id.menuItemName);
@@ -57,14 +59,12 @@ public class MenuAdapter extends RecyclerView.Adapter<MenuAdapter.ViewHolder> {
             btnAddToCart = view.findViewById(R.id.btnAddToCart);
         }
     }
-
     @Override
     public MenuAdapter.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
         View view = LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.item_menu, parent, false);
         return new ViewHolder(view);
     }
-
     @Override
     public void onBindViewHolder(ViewHolder holder, int position) {
         MenuItem r = MenuList.get(position);
@@ -78,14 +78,14 @@ public class MenuAdapter extends RecyclerView.Adapter<MenuAdapter.ViewHolder> {
                     .setMessage("Are you sure you want to delete this Menu Item?")
                     .setPositiveButton("Delete", (dialog, which) -> {
                         String menuItemId = r.getId();
-                        menu.onDelete(menuItemId, position); // call fragment method
+                        menu.onDelete(menuItemId, position);
                     })
                     .setNegativeButton("Cancel", null)
                     .create()
                     .show();
         });
         sharedPref = c.getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
-        userRole = sharedPref.getString("userRole", "user"); // Default to "user" if not found
+        userRole = sharedPref.getString("userRole", "user");
         if ("admin".equals(userRole)) {
             holder.ibDel.setVisibility(View.VISIBLE);
             holder.ibEdit.setVisibility(View.VISIBLE);
@@ -156,8 +156,48 @@ public class MenuAdapter extends RecyclerView.Adapter<MenuAdapter.ViewHolder> {
             return;
         }
         String userId = currentUser.getUid();
+        DatabaseReference cartRef = FirebaseDatabase.getInstance().getReference("carts").child(userId);
+        cartRef.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                if (dataSnapshot.exists() && dataSnapshot.getChildrenCount() > 0) {
+                    DataSnapshot firstItem = dataSnapshot.getChildren().iterator().next();
+                    CartItem existingItem = firstItem.getValue(CartItem.class);
+                    if (existingItem != null && !existingItem.getRestaurantId().equals(menuItem.getRestaurantId())) {
+                        new AlertDialog.Builder(c)
+                                .setTitle("Clear Cart")
+                                .setMessage("Your cart contains items from a different restaurant. Would you like to clear your cart and add this item?")
+                                .setPositiveButton("Yes", (dialog, which) -> {
+                                    // Clear cart and add new item
+                                    cartRef.removeValue().addOnCompleteListener(task -> {
+                                        if (task.isSuccessful()) {
+                                            addItemToCart(userId, menuItem);
+                                        } else {
+                                            Toast.makeText(c, "Failed to clear cart", Toast.LENGTH_SHORT).show();
+                                        }
+                                    });
+                                })
+                                .setNegativeButton("No", null)
+                                .create()
+                                .show();
+                    } else {
+                        addItemToCart(userId, menuItem);
+                    }
+                } else {
+                    // Cart is empty, add item
+                    addItemToCart(userId, menuItem);
+                }
+            }
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+                Toast.makeText(c, "Failed to check cart: " + databaseError.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+    private void addItemToCart(String userId, MenuItem menuItem) {
         DatabaseReference cartRef = FirebaseDatabase.getInstance().getReference("carts");
         String cartItemId = cartRef.push().getKey();
+
         if (cartItemId == null) {
             Toast.makeText(c, "Failed to generate cart item ID", Toast.LENGTH_SHORT).show();
             return;

@@ -1,6 +1,7 @@
 package com.example.project;
 
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
@@ -18,6 +19,8 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
@@ -26,18 +29,27 @@ import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.Query;
 import com.google.firebase.database.ValueEventListener;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class ProfileFrag extends Fragment {
 
     FirebaseAuth mAuth;
     EditText emailEditText, passwordEditText, nameEditText, addressEditText;
-    Button loginButton, signUpButton, logoutButton;
-    TextView userEmailTextView;
+    Button loginButton, signUpButton, logoutButton, btnAdminOrders;
+    TextView userEmailTextView, ordersTitle;
     LinearLayout loginLayout, profileLayout;
+    RecyclerView ordersRecyclerView;
+    OrderAdapter orderAdapter;
+    List<Order> orderList;
     Handler handler = new Handler();
     Runnable nameSaveRunnable;
     Runnable addressSaveRunnable;
+    DatabaseReference ordersRef;
+    ValueEventListener ordersListener;
 
     public ProfileFrag() {
         // Required empty public constructor
@@ -50,6 +62,9 @@ public class ProfileFrag extends Fragment {
         loginButton.setOnClickListener(v -> loginUser());
         signUpButton.setOnClickListener(v -> registerUser());
         logoutButton.setOnClickListener(v -> logoutUser());
+        btnAdminOrders.setOnClickListener(v -> {
+            startActivity(new Intent(getActivity(), AdminOrdersActivity.class));
+        });
         nameEditText.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
@@ -77,7 +92,6 @@ public class ProfileFrag extends Fragment {
             }
         });
         updateUI(mAuth.getCurrentUser());
-
         return view;
     }
     @Override
@@ -86,7 +100,6 @@ public class ProfileFrag extends Fragment {
         FirebaseUser currentUser = mAuth.getCurrentUser();
         updateUI(currentUser);
     }
-
     private void updateUI(FirebaseUser user) {
         if (user != null) {
             loginLayout.setVisibility(View.GONE);
@@ -100,9 +113,36 @@ public class ProfileFrag extends Fragment {
                 nameEditText.setHint("Enter your name");
             }
             loadUserAddress(user.getUid());
+            loadUserOrders(user.getUid());
+            DatabaseReference userRef = FirebaseDatabase.getInstance().getReference("users").child(user.getUid());
+            userRef.addListenerForSingleValueEvent(new ValueEventListener() {
+                @Override
+                public void onDataChange(@NonNull DataSnapshot snapshot) {
+                    if (snapshot.exists()) {
+                        String role = snapshot.child("role").getValue(String.class);
+                        if ("admin".equals(role)) {
+                            btnAdminOrders.setVisibility(View.VISIBLE);
+                        } else {
+                            btnAdminOrders.setVisibility(View.GONE);
+                        }
+                    }
+                }
+
+                @Override
+                public void onCancelled(@NonNull DatabaseError error) {
+                    btnAdminOrders.setVisibility(View.GONE);
+                }
+            });
         } else {
             loginLayout.setVisibility(View.VISIBLE);
             profileLayout.setVisibility(View.GONE);
+            ordersRecyclerView.setVisibility(View.GONE);
+            ordersTitle.setVisibility(View.GONE);
+            btnAdminOrders.setVisibility(View.GONE);
+
+            if (ordersRef != null && ordersListener != null) {
+                ordersRef.removeEventListener(ordersListener);
+            }
         }
     }
 
@@ -127,6 +167,46 @@ public class ProfileFrag extends Fragment {
                         Toast.LENGTH_SHORT).show();
             }
         });
+    }
+
+    private void loadUserOrders(String userId) {
+        ordersRef = FirebaseDatabase.getInstance().getReference("orders");
+        Query query = ordersRef.orderByChild("userId").equalTo(userId);
+
+        ordersListener = new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                orderList.clear();
+
+                for (DataSnapshot orderSnapshot : snapshot.getChildren()) {
+                    Order order = orderSnapshot.getValue(Order.class);
+                    if (order != null) {
+                        orderList.add(order);
+                    }
+                }
+
+                // Sort orders by timestamp (newest first)
+                orderList.sort((o1, o2) -> Long.compare(o2.getTimestamp(), o1.getTimestamp()));
+
+                orderAdapter.notifyDataSetChanged();
+
+                if (orderList.isEmpty()) {
+                    ordersRecyclerView.setVisibility(View.GONE);
+                    ordersTitle.setVisibility(View.GONE);
+                } else {
+                    ordersRecyclerView.setVisibility(View.VISIBLE);
+                    ordersTitle.setVisibility(View.VISIBLE);
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                Toast.makeText(getActivity(), "Failed to load orders: " + error.getMessage(),
+                        Toast.LENGTH_SHORT).show();
+            }
+        };
+
+        query.addValueEventListener(ordersListener);
     }
 
     private void updateUserName() {
@@ -179,6 +259,7 @@ public class ProfileFrag extends Fragment {
                     });
         }
     }
+
     private void loginUser() {
         String email = emailEditText.getText().toString().trim();
         String password = passwordEditText.getText().toString().trim();
@@ -217,6 +298,7 @@ public class ProfileFrag extends Fragment {
                     }
                 });
     }
+
     private void registerUser() {
         String email = emailEditText.getText().toString().trim();
         String password = passwordEditText.getText().toString().trim();
@@ -249,6 +331,7 @@ public class ProfileFrag extends Fragment {
                     }
                 });
     }
+
     private void logoutUser() {
         mAuth.signOut();
         SharedPreferences sharedPref = getActivity().getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
@@ -258,6 +341,7 @@ public class ProfileFrag extends Fragment {
         Toast.makeText(getActivity(), "Logged out successfully", Toast.LENGTH_SHORT).show();
         updateUI(null);
     }
+
     private void init(View view) {
         mAuth = FirebaseAuth.getInstance();
         loginLayout = view.findViewById(R.id.loginLayout);
@@ -270,5 +354,22 @@ public class ProfileFrag extends Fragment {
         nameEditText = view.findViewById(R.id.editTextName);
         addressEditText = view.findViewById(R.id.editTextAddress);
         logoutButton = view.findViewById(R.id.buttonLogout);
+        btnAdminOrders = view.findViewById(R.id.buttonAdminOrders);
+        ordersTitle = view.findViewById(R.id.ordersTitle);
+        ordersRecyclerView = view.findViewById(R.id.ordersRecyclerView);
+        orderList = new ArrayList<>();
+        orderAdapter = new OrderAdapter(getActivity(), orderList);
+        ordersRecyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
+        ordersRecyclerView.setAdapter(orderAdapter);
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        if (ordersRef != null && ordersListener != null) {
+            ordersRef.removeEventListener(ordersListener);
+        }
+        handler.removeCallbacks(nameSaveRunnable);
+        handler.removeCallbacks(addressSaveRunnable);
     }
 }

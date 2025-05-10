@@ -9,6 +9,7 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -46,6 +47,7 @@ public class MenuActivity extends AppCompatActivity implements MenuAdapter.onEdi
     SharedPreferences sharedPref;
     String userRole;
     Restaurant restaurant;
+    Button btnViewCart;
 
     ImageView ivRes;
     TextView tvName;
@@ -63,6 +65,8 @@ public class MenuActivity extends AppCompatActivity implements MenuAdapter.onEdi
 
         tvName = findViewById(R.id.restaurantName);
         ivRes = findViewById(R.id.ivRestaurant);
+        btnViewCart = findViewById(R.id.btnViewCart);
+
         Intent intent = getIntent();
         restaurantId = intent.getStringExtra("restaurantId");
         if (restaurantId == null || restaurantId.isEmpty()) return;
@@ -107,13 +111,14 @@ public class MenuActivity extends AppCompatActivity implements MenuAdapter.onEdi
                 String imageUrl = restaurant.getImageUrl();
                 if (imageUrl != null && !imageUrl.isEmpty()) {
                     Glide.with(MenuActivity.this).load(imageUrl).into(ivRes);
-            }
+                }
             }
             @Override
             public void onCancelled(@NonNull DatabaseError error) {
                 // Handle error
             }
         });
+
         sharedPref = this.getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
         userRole = sharedPref.getString("userRole", "user"); // Default to "user" if not found
 
@@ -122,8 +127,15 @@ public class MenuActivity extends AppCompatActivity implements MenuAdapter.onEdi
         } else {
             fabAddItem.setVisibility(View.GONE);  // Hide the floating button otherwise
         }
+
         fabAddItem.setOnClickListener((v)->{
             addItem(restaurantId);
+        });
+
+        btnViewCart.setOnClickListener(v -> {
+            Intent mainIntent = new Intent(MenuActivity.this, MainActivity.class);
+            mainIntent.putExtra("openCartFragment", true);
+            startActivity(mainIntent);
         });
     }
 

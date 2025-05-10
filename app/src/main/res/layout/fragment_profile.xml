@@ -115,5 +115,28 @@
             android:layout_height="wrap_content"
             android:text="Logout"
             android:layout_marginTop="20dp"/>
+        <Button
+            android:id="@+id/buttonAdminOrders"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Manage Orders"
+            android:layout_marginTop="10dp"
+            android:visibility="gone" />
+        <TextView
+            android:id="@+id/ordersTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Your Orders"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:layout_marginTop="20dp"
+            android:layout_marginBottom="8dp"
+            android:visibility="gone" />
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/ordersRecyclerView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:visibility="gone" />
     </LinearLayout>
 </LinearLayout>
