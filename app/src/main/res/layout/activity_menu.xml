@@ -1,23 +1,90 @@
-<?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/menu"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:id="@+id/menu">
+    android:layout_height="match_parent">
+
+    <ImageView
+        android:layout_width="match_parent"
+        android:layout_height="100dp"
+        android:id="@+id/ivRestaurant" />
+
+    <TextView
+        android:id="@+id/restaurantName"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/ivRestaurant"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:textColor="#000000"
+        android:padding="16dp"
+        android:text="Restaurant Name"
+        android:textAlignment="center"
+        />
+
+    <LinearLayout
+        android:id="@+id/ratingLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_horizontal"
+        android:layout_below="@id/restaurantName"
+        android:layout_marginTop="4dp">
+
+        <TextView
+            android:id="@+id/restaurantrating"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:textColor="#000000"
+            android:text="4.9" />
+
+        <ImageButton
+            android:id="@+id/star"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@android:color/transparent"
+            android:src="@android:drawable/btn_star_big_on"
+            android:layout_marginStart="4dp" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/tvName"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Menu"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:paddingStart="16dp"
+        android:paddingTop="8dp"
+        android:paddingBottom="8dp"
+        android:textColor="#000000"
+        android:textAlignment="center"
+        android:layout_below="@id/ratingLayout" />
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/MenuRecyclerView"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="0dp"
+        android:layout_below="@id/tvName"
+        android:layout_above="@id/btnViewCart"
         android:padding="8dp" />
 
+    <Button
+        android:id="@+id/btnViewCart"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:text="View Cart"
+        android:layout_margin="20dp" />
+
     <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fabAddNewItem"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:src="@drawable/add_icon"
         android:layout_alignParentBottom="true"
-        android:layout_alignParentRight="true"
-        android:layout_margin="30dp"
-        android:id="@+id/fabAddNewItem"
-        />
+        android:layout_alignParentEnd="true"
+        android:layout_margin="30dp" />
 
 </RelativeLayout>

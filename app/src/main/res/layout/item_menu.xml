@@ -8,9 +8,9 @@
     <androidx.cardview.widget.CardView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        app:cardBackgroundColor="#4E000000"
+        app:cardBackgroundColor="#FFFFFF"
         app:cardCornerRadius="15dp"
-        app:cardElevation="15dp"
+        app:cardElevation="1dp"
         android:layout_margin="5dp">
 
         <LinearLayout
@@ -19,8 +19,9 @@
             android:orientation="horizontal">
 
             <ImageView
-                android:layout_width="100dp"
-                android:layout_height="100dp"
+                android:layout_width="0dp"
+                android:layout_weight="3"
+                android:layout_height="match_parent"
                 android:id="@+id/menuItemImage" />
 
             <LinearLayout
@@ -37,6 +38,7 @@
                     android:layout_height="wrap_content"
                     android:textStyle="bold"
                     android:textSize="18sp"
+                    android:text="Name"
                     android:id="@+id/menuItemName" />
 
                 <TextView
@@ -44,6 +46,7 @@
                     android:layout_height="wrap_content"
                     android:textStyle="italic"
                     android:textSize="14sp"
+                    android:text="Description"
                     android:id="@+id/menuItemDesc" />
 
                 <!-- PRICE + BUTTON ROW -->
@@ -52,23 +55,25 @@
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
                     android:layout_marginTop="4dp"
-                    android:gravity="end|center_vertical"
+                    android:gravity="center_vertical"
                     android:weightSum="1">
 
                     <TextView
-                        android:layout_width="wrap_content"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:textStyle="bold"
                         android:textSize="16sp"
                         android:id="@+id/menuItemPrice"
+                        android:text="10"
                         android:layout_gravity="center_vertical"
-                        android:layout_marginEnd="16dp" />
+                        android:layout_marginEnd="16dp"
+                        android:layout_weight="1"/>
 
                     <Button
                         android:id="@+id/btnAddToCart"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Add to Cart"
+                        android:text="+"
                         android:visibility="visible" />
                 </LinearLayout>
             </LinearLayout>
@@ -90,7 +95,7 @@
                 <View
                     android:layout_width="match_parent"
                     android:layout_height="1dp"
-                    android:background="#3F000000"
+                    android:background="#FFFFFF"
                     android:layout_margin="7dp" />
 
                 <ImageButton

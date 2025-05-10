@@ -4,11 +4,14 @@ import static java.security.AccessController.getContext;
 
 import android.app.AlertDialog;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.EditText;
+import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
@@ -20,6 +23,7 @@ import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -41,6 +45,10 @@ public class MenuActivity extends AppCompatActivity implements MenuAdapter.onEdi
     FloatingActionButton fabAddItem;
     SharedPreferences sharedPref;
     String userRole;
+    Restaurant restaurant;
+
+    ImageView ivRes;
+    TextView tvName;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -53,7 +61,10 @@ public class MenuActivity extends AppCompatActivity implements MenuAdapter.onEdi
             return insets;
         });
 
-        restaurantId = getIntent().getStringExtra("restaurantId");
+        tvName = findViewById(R.id.restaurantName);
+        ivRes = findViewById(R.id.ivRestaurant);
+        Intent intent = getIntent();
+        restaurantId = intent.getStringExtra("restaurantId");
         if (restaurantId == null || restaurantId.isEmpty()) return;
         recyclerView = findViewById(R.id.MenuRecyclerView);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
@@ -66,6 +77,22 @@ public class MenuActivity extends AppCompatActivity implements MenuAdapter.onEdi
         dbRef = FirebaseDatabase.getInstance().getReference("menuItems");
         Query query = dbRef.orderByChild("restaurantId").equalTo(restaurantId);
 
+        DatabaseReference restaurantsRef = FirebaseDatabase.getInstance().getReference("restaurants");
+
+        restaurantsRef.child(restaurantId).addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                if (snapshot.exists()) {
+                    restaurant = snapshot.getValue(Restaurant.class);
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                Toast.makeText(MenuActivity.this, "Failed to load restaurant info.", Toast.LENGTH_SHORT).show();
+            }
+        });
+
         query.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
@@ -75,8 +102,13 @@ public class MenuActivity extends AppCompatActivity implements MenuAdapter.onEdi
                     menuItemsList.add(item);
                 }
                 adapter.notifyDataSetChanged();
-            }
+                tvName.setText(restaurant.getName().trim());
 
+                String imageUrl = restaurant.getImageUrl();
+                if (imageUrl != null && !imageUrl.isEmpty()) {
+                    Glide.with(MenuActivity.this).load(imageUrl).into(ivRes);
+            }
+            }
             @Override
             public void onCancelled(@NonNull DatabaseError error) {
                 // Handle error
