@@ -42,7 +42,7 @@
         android:layout_height="wrap_content"
         android:hint="Enter the price"
         android:id="@+id/etPrice"
-        android:inputType="number"
+        android:inputType="numberDecimal"
         android:layout_marginRight="20dp"
         android:layout_marginLeft="20dp"
         android:layout_marginBottom="10dp"
