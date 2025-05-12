@@ -41,7 +41,9 @@ public class MenuAdapter extends RecyclerView.Adapter<MenuAdapter.ViewHolder> {
     public interface onEditDel{
         void onEdit(MenuItem r);
         void onDelete(String ID, int position);
+        void onAdd();
     }
+
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
         public TextView nameText, descText, priceText;
@@ -70,7 +72,7 @@ public class MenuAdapter extends RecyclerView.Adapter<MenuAdapter.ViewHolder> {
         MenuItem r = MenuList.get(position);
         holder.nameText.setText(r.getName());
         holder.descText.setText(r.getDescription());
-        holder.priceText.setText("$" + String.format("%.2f", r.getPrice()));
+        holder.priceText.setText("RS" + String.format("%.2f", r.getPrice()));
         Glide.with(holder.itemView.getContext()).load(r.getImageUrl()).into(holder.imageView);
         holder.ibDel.setOnClickListener(v -> {
             new AlertDialog.Builder(c)
@@ -105,6 +107,7 @@ public class MenuAdapter extends RecyclerView.Adapter<MenuAdapter.ViewHolder> {
         });
         holder.btnAddToCart.setOnClickListener(v -> {
             addToCart(r);
+            menu.onAdd();
         });
     }
     @Override

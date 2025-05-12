@@ -50,7 +50,8 @@ public class MenuActivity extends AppCompatActivity implements MenuAdapter.onEdi
     Button btnViewCart;
 
     ImageView ivRes;
-    TextView tvName;
+    TextView tvName, tvItems;
+    int counter = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -66,6 +67,7 @@ public class MenuActivity extends AppCompatActivity implements MenuAdapter.onEdi
         tvName = findViewById(R.id.restaurantName);
         ivRes = findViewById(R.id.ivRestaurant);
         btnViewCart = findViewById(R.id.btnViewCart);
+        tvItems = findViewById(R.id.tvItems);
 
         Intent intent = getIntent();
         restaurantId = intent.getStringExtra("restaurantId");
@@ -106,6 +108,16 @@ public class MenuActivity extends AppCompatActivity implements MenuAdapter.onEdi
                     menuItemsList.add(item);
                 }
                 adapter.notifyDataSetChanged();
+
+                // ✅ Show/hide views based on list state
+                if (menuItemsList.isEmpty()) {
+                    tvItems.setVisibility(View.VISIBLE);
+                    recyclerView.setVisibility(View.GONE);
+                } else {
+                    tvItems.setVisibility(View.GONE);
+                    recyclerView.setVisibility(View.VISIBLE);
+                }
+
                 tvName.setText(restaurant.getName().trim());
 
                 String imageUrl = restaurant.getImageUrl();
@@ -205,5 +217,13 @@ public class MenuActivity extends AppCompatActivity implements MenuAdapter.onEdi
 
         menuItemsList.remove(position);
         adapter.notifyItemRemoved(position);
+    }
+
+    @Override
+    public void onAdd() {
+        counter++;
+        if(counter>0){
+            btnViewCart.setText("View Cart ("+counter+")");
+        }
     }
 }

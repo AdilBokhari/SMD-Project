@@ -48,17 +48,14 @@ public class MainActivity extends AppCompatActivity implements RestaurantAdapter
                         switch (position) {
                             case 0:
                                 tab.setText("Food");
-                                BadgeDrawable badge = tab.getOrCreateBadge();
                                 tab.setIcon(R.drawable.food_icon);
                                 break;
                             case 1:
                                 tab.setText("Cart");
-                                BadgeDrawable badge1 = tab.getOrCreateBadge();
                                 tab.setIcon(R.drawable.cart_icon);
                                 break;
                             case 2:
                                 tab.setText("Profile");
-                                BadgeDrawable badge2 = tab.getOrCreateBadge();
                                 tab.setIcon(R.drawable.profile_icon);
                                 break;
                         }
@@ -76,9 +73,8 @@ public class MainActivity extends AppCompatActivity implements RestaurantAdapter
             }
         });
 
-        // Check if we should open the Cart fragment
         if (getIntent().getBooleanExtra("openCartFragment", false)) {
-            viewPager2.setCurrentItem(1); // Index 1 is the Cart fragment
+            viewPager2.setCurrentItem(1);
         }
     }
 
@@ -104,5 +100,9 @@ public class MainActivity extends AppCompatActivity implements RestaurantAdapter
         Intent intent = new Intent(MainActivity.this, MenuActivity.class);
         intent.putExtra("restaurantId", restaurantId);
         startActivity(intent);
+    }
+
+    public void updatePageViewer(int pos){
+        viewPager2.setCurrentItem(1);
     }
 }

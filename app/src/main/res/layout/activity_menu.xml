@@ -70,6 +70,14 @@
         android:layout_above="@id/btnViewCart"
         android:padding="8dp" />
 
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/tvItems"
+        android:layout_below="@id/tvName"
+        android:layout_above="@id/btnViewCart"
+        android:text="No items" />
+
     <Button
         android:id="@+id/btnViewCart"
         android:layout_width="match_parent"

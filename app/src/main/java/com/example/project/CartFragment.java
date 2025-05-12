@@ -118,7 +118,7 @@ public class CartFragment extends Fragment implements CartAdapter.CartItemListen
         for (CartItem item : cartItems) {
             total += item.getTotalPrice();
         }
-        cartTotalPrice.setText("$" + String.format("%.2f", total));
+        cartTotalPrice.setText("RS" + String.format("%.2f", total));
     }
 
     private void showCartUI() {

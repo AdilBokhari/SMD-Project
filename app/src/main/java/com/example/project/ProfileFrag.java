@@ -249,9 +249,13 @@ public class ProfileFrag extends Fragment {
                     .getReference("users")
                     .child(user.getUid())
                     .child("address");
+
             userRef.setValue(newAddress)
                     .addOnSuccessListener(aVoid -> {
-                        Toast.makeText(getActivity(), "Address updated", Toast.LENGTH_SHORT).show();
+                        SharedPreferences sharedPref = getActivity().getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
+                        SharedPreferences.Editor editor = sharedPref.edit();
+                        editor.putString("userAddress", newAddress);
+                        editor.apply();
                     })
                     .addOnFailureListener(e -> {
                         Toast.makeText(getActivity(), "Failed to update address: " +
@@ -259,7 +263,6 @@ public class ProfileFrag extends Fragment {
                     });
         }
     }
-
     private void loginUser() {
         String email = emailEditText.getText().toString().trim();
         String password = passwordEditText.getText().toString().trim();
@@ -337,6 +340,7 @@ public class ProfileFrag extends Fragment {
         SharedPreferences sharedPref = getActivity().getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = sharedPref.edit();
         editor.remove("userRole");
+        editor.remove("userAddress");
         editor.apply();
         Toast.makeText(getActivity(), "Logged out successfully", Toast.LENGTH_SHORT).show();
         updateUI(null);

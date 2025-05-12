@@ -33,7 +33,7 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
         holder.orderIdTextView.setText("Order #" + order.getId().substring(0, 8));
         holder.restaurantNameTextView.setText(order.getRestaurantName());
         holder.orderStatusTextView.setText(order.getStatus());
-        holder.orderTotalTextView.setText("$" + String.format("%.2f", order.getTotalAmount()));
+        holder.orderTotalTextView.setText("RS" + String.format("%.2f", order.getTotalAmount()));
         SimpleDateFormat sdf = new SimpleDateFormat("MMM dd, yyyy HH:mm", Locale.getDefault());
         String dateString = sdf.format(new Date(order.getTimestamp()));
         holder.orderDateTextView.setText(dateString);

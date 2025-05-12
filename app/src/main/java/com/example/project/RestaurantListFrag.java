@@ -9,12 +9,14 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.viewpager2.widget.ViewPager2;
 
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
@@ -34,9 +36,12 @@ public class RestaurantListFrag extends Fragment implements RestaurantAdapter.on
     List<Restaurant> restaurantList;
     DatabaseReference dbRef;
     FloatingActionButton fabAddResturant;
-    ImageButton ibEdit, ibDelete;
+    ImageButton ibEdit, ibDelete, btnCart;
     SharedPreferences sharedPref;
     String userRole;
+    TextView tvAddress;
+    ViewPager2 viewPager;
+    MainActivity main;
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
@@ -46,16 +51,22 @@ public class RestaurantListFrag extends Fragment implements RestaurantAdapter.on
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         SharedPreferences sharedPref = getActivity().getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
         String userRole = sharedPref.getString("userRole", "user");
+        String address = sharedPref.getString("userAddress", null);
 
         recyclerView = view.findViewById(R.id.restaurantRecyclerView);
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
         restaurantList = new ArrayList<>();
         Context context = getContext();
+        main = (MainActivity) context;
         adapter = new RestaurantAdapter(getContext(), restaurantList, this);
         recyclerView.setAdapter(adapter);
         fabAddResturant = view.findViewById(R.id.fabAddNewRestaurant);
         ibDelete = view.findViewById(R.id.ibDel);
         ibEdit = view.findViewById(R.id.ibEdit);
+        tvAddress = view.findViewById(R.id.tvAddress);
+        btnCart = view.findViewById(R.id.btnCart);
+        viewPager = view.findViewById(R.id.viewpager2);
+
         dbRef = FirebaseDatabase.getInstance().getReference("restaurants");
         dbRef.addValueEventListener(new ValueEventListener() {
             @Override
@@ -83,6 +94,15 @@ public class RestaurantListFrag extends Fragment implements RestaurantAdapter.on
         fabAddResturant.setOnClickListener((v)->{
             addRestaurant();
         });
+        if (address != null) {
+            tvAddress.setText(address);
+        } else {
+            tvAddress.setText("Address not available"); // optional fallback
+        }
+        btnCart.setOnClickListener(v -> {
+            main.updatePageViewer(1);
+        });
+
     }
     private void addRestaurant() {
         AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
@@ -123,8 +143,9 @@ public class RestaurantListFrag extends Fragment implements RestaurantAdapter.on
     public void onResume() {
         super.onResume();
 
-        sharedPref = getActivity().getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
-        userRole = sharedPref.getString("userRole", "user");
+        SharedPreferences sharedPref = getActivity().getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
+        String userRole = sharedPref.getString("userRole", "user");
+        String address = sharedPref.getString("userAddress", null);
 
         if (fabAddResturant != null) {
             if ("admin".equals(userRole)) {
@@ -134,6 +155,11 @@ public class RestaurantListFrag extends Fragment implements RestaurantAdapter.on
             }
         }
         adapter.notifyDataSetChanged();
+        if (address != null) {
+            tvAddress.setText(address);
+        } else {
+            tvAddress.setText("Address"); // optional fallback
+        }
     }
 
 
